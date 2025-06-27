@@ -874,7 +874,7 @@ function Invoke-CheckManagedIdentities {
             [void]$DetailTxtBuilder.AppendLine("================================================================================================`n")
             [void]$DetailTxtBuilder.AppendLine("Managed Identity Credentials`n")
             [void]$DetailTxtBuilder.AppendLine("================================================================================================`n")
-            [void]$DetailTxtBuilder.AppendLine(($ReportingCredentials | Out-String))
+            [void]$DetailTxtBuilder.AppendLine(($ReportingCredentials | Out-String -Width 512))
         } 
 
         ############### App Roles

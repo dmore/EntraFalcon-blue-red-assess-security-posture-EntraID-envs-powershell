@@ -1219,7 +1219,7 @@ function Invoke-CheckUsers {
             [void]$DetailTxtBuilder.AppendLine("-----------------------------------------------------------------")
             [void]$DetailTxtBuilder.AppendLine("Owner of Service Principal")
             [void]$DetailTxtBuilder.AppendLine("-----------------------------------------------------------------")
-            [void]$DetailTxtBuilder.AppendLine(($ReportingOwnerSP | format-table -Property DisplayName,AppLock,GroupMembership,GroupOwnership,AppOwnership,EntraRoles,AzureRoles,APIPermission,Warnings | Out-String))
+            [void]$DetailTxtBuilder.AppendLine(($ReportingOwnerSP | format-table -Property DisplayName,AppLock,GroupMembership,GroupOwnership,AppOwnership,EntraRoles,AzureRoles,APIPermission,Warnings | Out-String -Width 512))
             $ReportingOwnerSP  = foreach ($obj in $ReportingOwnerSP) {
                 [pscustomobject]@{
                     DisplayName             = $obj.DisplayNameLink
@@ -1432,7 +1432,7 @@ function Invoke-CheckUsers {
         }
 
         ############### Azure Roles
-        if (@($item.AzureRoleDetails).count -ge 1 ) {
+        if ($item.AzureRoles -ge 1 ) {
             $ReportingAzureRoles = foreach ($object in $($item.AzureRoleDetails)) {
                 [pscustomobject]@{ 
                     "Role name" = $object.RoleName
@@ -1446,7 +1446,7 @@ function Invoke-CheckUsers {
             [void]$DetailTxtBuilder.AppendLine("================================================================================================")
             [void]$DetailTxtBuilder.AppendLine("Azure IAM assignments")
             [void]$DetailTxtBuilder.AppendLine("================================================================================================")
-            [void]$DetailTxtBuilder.AppendLine(($ReportingAzureRoles | format-table | Out-String))
+            [void]$DetailTxtBuilder.AppendLine(($ReportingAzureRoles | format-table | Out-String -Width 512))
         }
 
         $ObjectDetails = [pscustomobject]@{
