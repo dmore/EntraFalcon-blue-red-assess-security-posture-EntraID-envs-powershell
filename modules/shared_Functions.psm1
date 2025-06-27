@@ -2906,8 +2906,17 @@ function Get-AllAzureIAMAssignmentsNative {
         $url = "https://management.azure.com/subscriptions/$($subscription.Id)/providers/Microsoft.Authorization/roleAssignments?api-version=2022-04-01"
         $response = Invoke-RestMethod -Uri $url -Method GET -Headers $headers
         $AssignmentsActive = $response.value | ForEach-Object {
-            $RoleDetails = $roleHashTable[(($_.properties.roleDefinitionId -split '/')[-1])]
+            $roleId = ($_.properties.roleDefinitionId -split '/')[-1]
+
+            # Null safe check
+            if (-not $roleHashTable.ContainsKey($roleId)) {
+                Write-Host-Message "[!] Skipping unknown RoleId: $roleId"
+                return
+            }
+            $RoleDetails = $roleHashTable[$roleId]
             $hasCondition = ($null -ne $_.properties.condition -and $_.properties.condition.Trim() -ne "")
+
+
             if ($GLOBALAzureRoleRating.ContainsKey($RoleDetails.RoleId)) {
                 # If the RoleDefinition ID is found, return it's Tier-Level
                 $RoleTier = $GLOBALAzureRoleRating[$RoleDetails.RoleId]
