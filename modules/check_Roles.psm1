@@ -194,22 +194,31 @@ $SortedEntraRoles = $EntraRoles | Sort-Object @{
     Expression = { $_.Role -eq "Global Administrator" }
     Descending = $true
 }, @{
-    Expression = { $_.Role -match "privileged" }
+    Expression = { $_.Role -eq "Privileged Role Administrator" }
     Descending = $true
 }, @{
-    Expression = { $_.Role -match "Application Administrator" }
+    Expression = { $_.Role -eq "Privileged Authentication Administrator" }
     Descending = $true
 }, @{
-    Expression = { $_.Role -match "User Administrator" }
+    Expression = { $_.Role -eq "Application Administrator" }
     Descending = $true
 }, @{
-    Expression = { $_.Role -match "Groups Administrator" }
+    Expression = { $_.RoleTier -eq "Tier-0" }
     Descending = $true
 }, @{
-    Expression = { $_.Role -match "Reader" }
-    Descending = $false
+    Expression = { $_.Role -eq "User Administrator" }
+    Descending = $true
+}, @{
+    Expression = { $_.Role -eq "Groups Administrator" }
+    Descending = $true
+}, @{
+    Expression = { $_.RoleTier -eq "Tier-1" }
+    Descending = $true
 }, @{
     Expression = { $_.IsPrivileged }
+    Descending = $true
+}, @{
+    Expression = { $_.RoleTier -eq "Tier-2" }
     Descending = $true
 }, @{
     Expression = { $_.Role }
