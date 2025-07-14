@@ -1407,8 +1407,8 @@ function Invoke-CheckGroups {
             if (-not $matchingGroup) { continue }
             # Risky nesting warning
             if ($targetGroup.Protected -and -not $matchingGroup.Protected) {
-                if ($targetGroup.Warnings -notcontains "Protected group has nested / is owned by unprotected group") {
-                    $targetGroup.Warnings += " / Protected group has nested / is owned by unprotected group"
+                if ($targetGroup.Warnings -notcontains "Protected group is owned by or contains unprotected groups") {
+                    $targetGroup.Warnings += " / Protected group is owned by or contains unprotected groups"
                 }
             }
 
@@ -1800,7 +1800,7 @@ $tableOutput | Format-table DisplayName,type,SecurityEnabled,RoleAssignable,OnPr
             [void]$DetailTxtBuilder.AppendLine($formattedText)
 
             #Rebuild for HTML report
-            foreach ($obj in $OwnerGroups) {
+            foreach ($obj in $OwnerGroupsRaw) {
                 [void]$OwnerGroups.Add([pscustomobject]@{
                     AssignmentType      = $obj.AssignmentType
                     DisplayName         = $obj.DisplayNameLink
