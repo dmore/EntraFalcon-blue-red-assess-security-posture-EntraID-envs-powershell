@@ -14,6 +14,7 @@ function Invoke-CheckManagedIdentities {
         [Parameter(Mandatory=$true)][Object[]]$CurrentTenant,
         [Parameter(Mandatory=$false)][hashtable]$AzureIAMAssignments,
         [Parameter(Mandatory=$true)][hashtable]$TenantRoleAssignments,
+        [Parameter(Mandatory = $true)][int]$ApiTop,
         [Parameter(Mandatory=$true)][String[]]$StartTimestamp
     )
 
@@ -89,7 +90,7 @@ function Invoke-CheckManagedIdentities {
     $QueryParameters = @{
         '$filter' = "ServicePrincipalType eq 'ManagedIdentity'"
         '$select' = "Id,DisplayName,AppId,AppRoles,servicePrincipalType,PasswordCredentials,KeyCredentials,AlternativeNames"
-        '$top' = "999"
+        '$top' = $ApiTop
     }
     $ManagedIdentities = @(Send-GraphRequest -AccessToken $GLOBALMsGraphAccessToken.access_token -Method GET -Uri '/servicePrincipals' -QueryParameters $QueryParameters -BetaAPI -UserAgent $($GlobalAuditSummary.UserAgent.Name))
 
@@ -109,7 +110,7 @@ function Invoke-CheckManagedIdentities {
         $QueryParameters = @{
             '$filter' = "ServicePrincipalType eq 'Application'"
             '$select' = "Id,DisplayName,AppRoles"
-            '$top' = "999"
+            '$top' = $ApiTop
         }
         $EnterpriseApps = Send-GraphRequest -AccessToken $GLOBALMsGraphAccessToken.access_token -Method GET -Uri '/servicePrincipals' -QueryParameters $QueryParameters -BetaAPI -UserAgent $($GlobalAuditSummary.UserAgent.Name)
         $AllPermissions = foreach ($item in $EnterpriseApps) {
@@ -156,7 +157,7 @@ function Invoke-CheckManagedIdentities {
                 "id"     = $($_.id)
                 "method" = "GET"
                 "url"    =   "/servicePrincipals/$($_.id)/transitiveMemberOf/microsoft.graph.group?`$select=Id,displayName,visibility,securityEnabled,groupTypes,isAssignableToRole"
-                "$top" = "999"
+                "$top" = $ApiTop
             }
         }
         # Send Batch request and create a hashtable

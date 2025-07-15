@@ -2378,7 +2378,7 @@ function Get-RegisterAuthMethodsUsers {
 
     $QueryParameters = @{
         '$select' = "Id,IsMfaCapable"
-        '$top' = "5000"
+        '$top' = "3000"
     }
     try {
         $RegisteredAuthMethods = Send-GraphRequest -AccessToken $GLOBALMsGraphAccessToken.access_token -Method GET -Uri "/reports/authenticationMethods/userRegistrationDetails" -QueryParameters $QueryParameters -BetaAPI -UserAgent $($GlobalAuditSummary.UserAgent.Name) -ErrorAction Stop
@@ -2400,11 +2400,15 @@ function Get-RegisterAuthMethodsUsers {
 
 #Get all Users
 function Get-UsersBasic {
+    Param (
+        [Parameter(Mandatory = $true)][int]$ApiTop
+    )
+
      write-host "[*] Retrieve basic user list"
 
     $QueryParameters = @{
         '$select' = "Id,UserPrincipalName,UserType,accountEnabled,onPremisesSyncEnabled"
-        '$top' = "999"
+        '$top' = $ApiTop
       }
       $RawResponse = Send-GraphRequest -AccessToken $GLOBALMsGraphAccessToken.access_token -Method GET -Uri "/users" -QueryParameters $QueryParameters -BetaAPI -UserAgent $($GlobalAuditSummary.UserAgent.Name)
     $AllUsersBasicHT = @{}
@@ -2417,11 +2421,14 @@ function Get-UsersBasic {
 
 #Get Basic User Infos
 function Get-Devices {
+    Param (
+        [Parameter(Mandatory = $true)][int]$ApiTop
+    )
      write-host "[*] Retrieve devices"
 
     $QueryParameters = @{
         '$select' = "Id,accountEnabled,displayName,Manufacturer,trustType,operatingSystem,operatingSystemVersion"
-        '$top' = "999"
+        '$top' = $ApiTop
     }
 
     $DevicesRaw = Send-GraphRequest -AccessToken $GLOBALMsGraphAccessToken.access_token -Method GET -Uri "/devices" -QueryParameters $QueryParameters -BetaAPI -UserAgent $($GlobalAuditSummary.UserAgent.Name)

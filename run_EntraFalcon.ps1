@@ -18,6 +18,11 @@
     Specifies the user agent string to be used in the HTTP requests to the token endpoint and APIs
     Default: `EntraFalcon`
 
+    .PARAMETER ApiTop
+    Specifies the Graph API page size (number of objects per response). Use a lower value if you encounter HTTP 504 errors (this will result in more API requests).
+    The default value used by Microsoft Graph API is 100. Valid range: 5–999.
+    Default: `999`
+
     .PARAMETER DisableCAE
     Disables Continuous Access Evaluation (CAE), resulting in shorter-lived access tokens.
     Useful when CAE breaks the script.
@@ -77,6 +82,10 @@ Param (
 
     [Parameter(Mandatory = $false)]
     [int]$LimitResults,
+
+    [Parameter(Mandatory = $false)]
+    [ValidateRange(5, 999)]
+    [int]$ApiTop = 999,
 
     [Parameter(Mandatory=$false)]
     [switch]$QAMode = $false,
@@ -206,25 +215,25 @@ if ($TenantPimForGroupsAssignments) {
 $UserAuthMethodsTable = Get-RegisterAuthMethodsUsers
 
 # Get Devices
-$Devices = Get-Devices
+$Devices = Get-Devices -ApiTop $ApiTop
 
 # Get Basic User info
-$AllUsersBasicHT = Get-UsersBasic
+$AllUsersBasicHT = Get-UsersBasic -ApiTop $ApiTop
 
 write-host "`n********************************** [1/9] Enumerating Groups **********************************"
-$AllGroupsDetails = Invoke-CheckGroups -AdminUnitWithMembers $AdminUnitWithMembers -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -ConditionalAccessPolicies $Caps -AzureIAMAssignments $AzureIAMAssignments -TenantRoleAssignments $TenantRoleAssignments -TenantPimForGroupsAssignments $TenantPimForGroupsAssignments -OutputFolder $OutputFolder -Devices $Devices -AllUsersBasicHT $AllUsersBasicHT -Verbose:$VerbosePreference @optionalParamsUserandGroup
+$AllGroupsDetails = Invoke-CheckGroups -AdminUnitWithMembers $AdminUnitWithMembers -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -ConditionalAccessPolicies $Caps -AzureIAMAssignments $AzureIAMAssignments -TenantRoleAssignments $TenantRoleAssignments -TenantPimForGroupsAssignments $TenantPimForGroupsAssignments -OutputFolder $OutputFolder -Devices $Devices -AllUsersBasicHT $AllUsersBasicHT -ApiTop $ApiTop -Verbose:$VerbosePreference @optionalParamsUserandGroup
 
 write-host "`n********************************** [2/9] Enumerating Enterprise Apps **********************************"
-$EnterpriseApps = Invoke-CheckEnterpriseApps -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -AzureIAMAssignments $AzureIAMAssignments -TenantRoleAssignments $TenantRoleAssignments -AllGroupsDetails $AllGroupsDetails -OutputFolder $OutputFolder -AllUsersBasicHT $AllUsersBasicHT -Verbose:$VerbosePreference @optionalParamsET
+$EnterpriseApps = Invoke-CheckEnterpriseApps -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -AzureIAMAssignments $AzureIAMAssignments -TenantRoleAssignments $TenantRoleAssignments -AllGroupsDetails $AllGroupsDetails -OutputFolder $OutputFolder -AllUsersBasicHT $AllUsersBasicHT -ApiTop $ApiTop -Verbose:$VerbosePreference @optionalParamsET
 
 write-host "`n********************************** [3/9] Enumerating Managed Identities **********************************"
-$ManagedIdentities = Invoke-CheckManagedIdentities -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -AzureIAMAssignments $AzureIAMAssignments -TenantRoleAssignments $TenantRoleAssignments -AllGroupsDetails $AllGroupsDetails -OutputFolder $OutputFolder -Verbose:$VerbosePreference
+$ManagedIdentities = Invoke-CheckManagedIdentities -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -AzureIAMAssignments $AzureIAMAssignments -TenantRoleAssignments $TenantRoleAssignments -AllGroupsDetails $AllGroupsDetails -OutputFolder $OutputFolder -ApiTop $ApiTop -Verbose:$VerbosePreference
 
 write-host "`n********************************** [4/9] Enumerating App Registrations **********************************"
 $AppRegistrations = Invoke-CheckAppRegistrations -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -EnterpriseApps $EnterpriseApps -AllGroupsDetails $AllGroupsDetails -TenantRoleAssignments $TenantRoleAssignments -OutputFolder $OutputFolder -Verbose:$VerbosePreference
 
 write-host "`n********************************** [5/9] Enumerating Users **********************************"
-$Users = Invoke-CheckUsers -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -EnterpriseApps $EnterpriseApps -AllGroupsDetails $AllGroupsDetails -ConditionalAccessPolicies $Caps -AzureIAMAssignments $AzureIAMAssignments -TenantRoleAssignments $TenantRoleAssignments -AppRegistrations $AppRegistrations -AdminUnitWithMembers $AdminUnitWithMembers -TenantPimForGroupsAssignments $TenantPimForGroupsAssignments -UserAuthMethodsTable $UserAuthMethodsTable -Devices $Devices -OutputFolder $OutputFolder -Verbose:$VerbosePreference @optionalParamsUserandGroup
+$Users = Invoke-CheckUsers -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -EnterpriseApps $EnterpriseApps -AllGroupsDetails $AllGroupsDetails -ConditionalAccessPolicies $Caps -AzureIAMAssignments $AzureIAMAssignments -TenantRoleAssignments $TenantRoleAssignments -AppRegistrations $AppRegistrations -AdminUnitWithMembers $AdminUnitWithMembers -TenantPimForGroupsAssignments $TenantPimForGroupsAssignments -UserAuthMethodsTable $UserAuthMethodsTable -Devices $Devices -OutputFolder $OutputFolder -ApiTop $ApiTop -Verbose:$VerbosePreference @optionalParamsUserandGroup
 
 write-host "`n********************************** [6/9] Generating Role Assignments **********************************"
 Invoke-CheckRoles -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -EnterpriseApps $EnterpriseApps -AllGroupsDetails $AllGroupsDetails -AzureIAMAssignments $AzureIAMAssignments -TenantRoleAssignments $TenantRoleAssignments -AppRegistrations $AppRegistrations -AdminUnitWithMembers $AdminUnitWithMembers -Users $Users -ManagedIdentities $ManagedIdentities -OutputFolder $OutputFolder -Verbose:$VerbosePreference

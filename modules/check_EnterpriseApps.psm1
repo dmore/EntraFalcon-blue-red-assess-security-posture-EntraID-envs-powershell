@@ -20,6 +20,7 @@ function Invoke-CheckEnterpriseApps {
         [Parameter(Mandatory=$false)][hashtable]$AzureIAMAssignments,
         [Parameter(Mandatory=$true)][hashtable]$AllUsersBasicHT,
         [Parameter(Mandatory=$true)][hashtable]$TenantRoleAssignments,
+        [Parameter(Mandatory = $true)][int]$ApiTop,
         [Parameter(Mandatory=$true)][String[]]$StartTimestamp
     )
 
@@ -107,7 +108,7 @@ function Invoke-CheckEnterpriseApps {
     $QueryParameters = @{
         '$filter' = "ServicePrincipalType eq 'Application'"
         '$select' = "Id,DisplayName,PublisherName,accountEnabled,AppRoles,AppId,servicePrincipalType,signInAudience,AppOwnerOrganizationId,PasswordCredentials,KeyCredentials,AppRoleAssignmentRequired"
-        '$top' = "999"
+        '$top' = $ApiTop
     }
     $EnterpriseApps = Send-GraphRequest -AccessToken $GLOBALMsGraphAccessToken.access_token -Method GET -Uri '/servicePrincipals' -QueryParameters $QueryParameters -BetaAPI -UserAgent $($GlobalAuditSummary.UserAgent.Name)
 
@@ -169,7 +170,7 @@ function Invoke-CheckEnterpriseApps {
     }
 
     write-host "[*] Get last app last sign-in dates"
-    $AppLastSignInsRaw = Send-GraphRequest -AccessToken $GLOBALMsGraphAccessToken.access_token -Method GET -Uri "/reports/servicePrincipalSignInActivities" -BetaAPI -QueryParameters @{ '$top' = "999" } -UserAgent $($GlobalAuditSummary.UserAgent.Name)
+    $AppLastSignInsRaw = Send-GraphRequest -AccessToken $GLOBALMsGraphAccessToken.access_token -Method GET -Uri "/reports/servicePrincipalSignInActivities" -BetaAPI -QueryParameters @{ '$top' = $ApiTop } -UserAgent $($GlobalAuditSummary.UserAgent.Name)
     foreach ($app in $AppLastSignInsRaw) {
         $AppLastSignIns[$app.appId] = @{
             id = $app.appId
