@@ -63,6 +63,7 @@ return @"
             "Conditional Access Policies" = $($GlobalAuditSummary.ConditionalAccess.Count)
             "Entra Role Assignments"      = $($GlobalAuditSummary.EntraRoleAssignments.Count)
             "Azure Role Assignments"      = $($GlobalAuditSummary.AzureRoleAssignments.Count)
+            "Pim Settings"                = $($GlobalAuditSummary.PimSettings.Count)
         }
 
     $mainTableJson  = $mainTable | ConvertTo-Json -Depth 10 -Compress
@@ -728,6 +729,7 @@ Enumeration Results:
     - Conditional Access Policies: $($GlobalAuditSummary.ConditionalAccess.Count) ($($GlobalAuditSummary.ConditionalAccess.Enabled) Enabled)
     - Entra Role Assignments:      $($GlobalAuditSummary.EntraRoleAssignments.Count) ($($GlobalAuditSummary.EntraRoleAssignments.Eligible) Eligible)
     - Azure Role Assignments:      $($GlobalAuditSummary.AzureRoleAssignments.Count) ($($GlobalAuditSummary.AzureRoleAssignments.Eligible) Eligible)
+    - Pim Settings:                $($GlobalAuditSummary.PimSettings.Count)
 "@
 
 

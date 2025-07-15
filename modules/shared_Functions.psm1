@@ -100,6 +100,11 @@ $global:GLOBALJavaScript = @'
             ],
             "Groups": [
                 {
+                    label: "Groups Tier-0",
+                    filters: { Warnings: "tier0" },
+                    columns: ["DisplayName", "Type", "Protected", "SecurityEnabled", "PIM", "AuUnits", "Users", "NestedGroups", "NestedInGroups", "AppRoles", "CAPs", "EntraRoles", "AzureRoles", "Impact", "Likelihood", "Risk", "Warnings"]
+                },
+                {
                     label: "Public M365 Groups",
                     filters: { Visibility: "=Public", Type: "=M365 Group" },
                     columns: ["DisplayName", "Type", "SecurityEnabled", "Visibility", "Users", "AzureRoles", "NestedInGroups", "AppRoles", "CAPs", "EntraRoles", "Impact", "Likelihood", "Risk", "Warnings"]
@@ -139,6 +144,15 @@ $global:GLOBALJavaScript = @'
                     label: "Groups Onboarded to PIM",
                     filters: { PIM: "=true" },
                     columns: ["DisplayName", "Type", "Protected", "SecurityEnabled", "PIM", "Users", "NestedGroups", "NestedInGroups", "AppRoles", "CAPs", "EntraRoles", "AzureRoles", "Impact", "Likelihood", "Risk", "Warnings"]
+                },
+                {
+                    label: "PIM for Groups PrivEsc",
+                    filters: {
+                        PIM: "=true",
+                        Protected: "=true",
+                        Warnings: "contains unprotected groups"
+                    },
+                    columns: ["DisplayName", "Type", "Protected", "SecurityEnabled", "PIM", "AuUnits", "Users", "NestedGroups", "NestedInGroups", "AppRoles", "CAPs", "EntraRoles", "AzureRoles", "Impact", "Likelihood", "Risk", "Warnings"]
                 },
                 {
                     label: "Interesting Groups by Keywords",
@@ -428,11 +442,62 @@ $global:GLOBALJavaScript = @'
                         RoleType: "=CustomRole"
                     }
                 }
+            ],
+            "PIM": [
+                {
+                    label: "Tier 0 Roles: With Warnings",
+                    filters: {
+                        Tier: "=Tier-0",
+                        Warnings: "!=empty"
+                    },
+                    columns: ["Role", "Tier", "Eligible", "ActivationAuthContext", "ActivationMFA", "ActivationJustification", "ActivationTicketing", "ActivationApproval", "ActivationDuration", "ActiveAssignMFA", "ActiveAssignJustification", "Warnings"]
+                },
+                {
+                    label: "Tier 0 Roles: No Auth Context",
+                    filters: {
+                        Tier: "=Tier-0",
+                        ActivationAuthContext: "=false"
+                    },
+                    columns: ["Role", "Tier", "Eligible", "ActivationAuthContext", "Warnings"]
+                },
+                {
+                    label: "Tier 0 Roles: Activation Duration >4 Hours",
+                    filters: {
+                        Tier: "=Tier-0",
+                        ActivationDuration	: ">4"
+                    },
+                    columns: ["Role", "Tier", "Eligible", "ActivationDuration", "Warnings"]
+                },
+                {
+                    label: "Tier 0/1 Roles: With Warnings",
+                    filters: {
+                        Tier: "Tier-0 || Tier-1",
+                        Warnings: "!=empty"
+                    },
+                    columns: ["Role", "Tier", "Eligible", "ActivationAuthContext", "ActivationMFA", "ActivationJustification", "ActivationTicketing", "ActivationApproval", "ActivationDuration", "ActiveAssignMFA", "ActiveAssignJustification", "Warnings"]
+                },
+                {
+                    label: "Used Tier 0/1 Roles (Eligible): With Warnings",
+                    filters: {
+                        Eligible: ">0",
+                        Tier: "Tier-0 || Tier-1",
+                        Warnings: "!=empty"
+                    },
+                    columns: ["Role", "Tier", "Eligible", "ActivationAuthContext", "ActivationMFA", "ActivationJustification", "ActivationTicketing", "ActivationApproval", "ActivationDuration", "ActiveAssignMFA", "ActiveAssignJustification", "Warnings"]
+                },
+                {
+                    label: "Used Roles (Eligible): With Warnings",
+                    filters: {
+                        Eligible: ">0",
+                        Warnings: "!=empty"
+                    },
+                    columns: ["Role", "Tier", "Eligible", "ActivationAuthContext", "ActivationMFA", "ActivationJustification", "ActivationTicketing", "ActivationApproval", "ActivationDuration", "ActiveAssignMFA", "ActiveAssignJustification", "Warnings"]
+                }
             ]
         };
 
         //Define columns which are hidden by default
-        const defaultHidden = ["DeviceReg", "DeviceOwn", "LicenseStatus", "OwnersSynced", "DefaultMS", "AppRoleRequired", "RoleAssignable", "LastSignInDays", "CreatedDays",];
+        const defaultHidden = ["DeviceReg", "DeviceOwn", "LicenseStatus", "OwnersSynced", "DefaultMS", "AppRoleRequired", "RoleAssignable", "LastSignInDays", "CreatedDays","ActiveAssignJustification","AlertAssignEligible","AlertAssignActive", "AlertActivation", "EligibleExpirationTime", "ActiveExpirationTime", "SignInFrequency", "SignInFrequencyInterval"];
 
         // Function to obtain the GET parameters from the URL
         function getURLParams() {
@@ -596,6 +661,7 @@ $global:GLOBALJavaScript = @'
                         title.includes("AppRegistration Enumeration") ? "App Registrations" :
                         title.includes("ManagedIdentities Enumeration") ? "Managed Identities" :
                         title.includes("ConditionalAccessPolicies Enumeration") ? "Conditional Access Policies" :
+                        title.includes("PIM Enumeration") ? "PIM" :
                         title.includes("Role Assignments Entra ID") ? "Role Assignments Entra ID" :
                         title.includes("Role Assignments Azure IAM") ? "Role Assignments Azure IAM" : null;
 
@@ -1619,7 +1685,7 @@ $global:GLOBALJavaScript = @'
 			const headers = Array.from(rows[0].cells).map(th => th.getAttribute("data-col") || th.textContent.trim());
 
 			const redIfTrueHeaders = new Set(['Foreign', 'Inactive', 'PIM', 'Dynamic', 'SecurityEnabled', 'OnPrem', 'Conditions', 'IsBuiltIn','IsPrivileged']);
-			const redIfFalseHeaders = new Set(['AppLock', 'MfaCap', 'Protected', 'Enabled', 'RoleAssignable']);
+			const redIfFalseHeaders = new Set(['AppLock', 'MfaCap', 'Protected', 'Enabled', 'RoleAssignable', 'ActivationMFA', 'ActivationAuthContext', 'ActivationApproval', 'ActiveAssignMFA', 'EligibleExpiration', 'ActiveExpiration', 'ActivationJustification','ActivationTicketing', 'ActiveAssignJustification', 'AlertAssignEligible','AlertAssignActive', 'AlertActivation']);
 			const redIfContent = new Set(['all', 'alltrusted', 'report-only', 'disabled', 'public', 'guest', 'customrole', 'active']);
 			const redIfContentHeaders = new Set(['IncUsers', 'IncResources', 'IncNw', 'ExcNw', 'IncPlatforms', 'State', 'Visibility', 'UserType', 'RoleType', 'AssignmentType']);
 
@@ -2478,19 +2544,19 @@ function RefreshAuthenticationMsGraph {
 }
 
 function Invoke-CheckTokenExpiration ($Object) {
-    #write-host "[*] Checking MS Graph access token expiration... $($Object.Target)"
+    #write-host "[*] Checking access token expiration... $($Object.Target)"
     $validForMinutes = [Math]::Ceiling((NEW-TIMESPAN -Start (Get-Date) -End $Object.Expiration_time).TotalMinutes)
 
     #Check if the token is valid for more than 15 minutes
     if ($validForMinutes -ge 30) {
-        #write-host "[+] MS Graph Token is still valid for $validForMinutes minutes"
+        #write-host "[+] Token is still valid for $validForMinutes minutes"
         $result = $true
 
     } elseif ($validForMinutes -le 30 -and $validForMinutes -ge 0) {
-        write-host "[!] MS Graph Token will expire in $validForMinutes minutes"
+        write-host "[!] Access token will expire in $validForMinutes minutes"
         $result = $false   
     } else {
-        write-host "[!] MS Graph Token has expired $([Math]::Abs($validForMinutes)) minutes ago"
+        write-host "[!] Access token has expired $([Math]::Abs($validForMinutes)) minutes ago"
         $result = $false
     }
     return $result
@@ -3143,7 +3209,7 @@ function Get-ConditionalAccessPolicies {
     Return $CapGroups
 }
 
-#Authenticate using an ARM Refresh token and get a new token for PIM
+#Authenticate using an refresh token and get a new token for PIM
 function Invoke-MsGraphAuthPIM {
 
     write-host "[*] Refresh to Managed Meeting Rooms client"
@@ -3168,6 +3234,14 @@ function Invoke-MsGraphAuthPIM {
         $result = $false
     }
     return $result
+}
+
+#Refresh PIM token
+function Invoke-MsGraphRefreshPIM {
+
+    write-host "[*] Refresh PIM access token"
+    $global:GLOBALPIMsGraphAccessToken = Invoke-Refresh -RefreshToken $GLOBALPIMsGraphAccessToken.refresh_token -clientid "eb20f3e3-3dce-4d2c-b721-ebb8d4414067" -DisableJwtParsing @GLOBALAuthParameters
+    
 }
 
 
@@ -3200,8 +3274,13 @@ function Get-EntraPIMRoleAssignments {
         $PimRoles = Send-GraphRequest -AccessToken $GLOBALPIMsGraphAccessToken.access_token -Method GET -Uri "/roleManagement/directory/roleEligibilitySchedules" -QueryParameters $QueryParameters -BetaAPI  -UserAgent $($GlobalAuditSummary.UserAgent.Name) -ErrorAction Stop
     
     } catch {
-        write-host "[!] Failed to get PIM role assignments. Tenant might be not be licenced for PIM. Details:"
-        write-host $($_.Exception.Message)
+        if ($($_.Exception.Message) -match "Status: 400") {
+            write-host "[!] HTTP 400 Error: Most likely due to missing Entra ID premium licence. Assuming no PIM for Entra roles is used."
+        } else {
+            write-host "[!] Auth error: $($_.Exception.Message -split '\n'). Assuming no PIM for Entra roles is used."
+        }
+        #Set global var so that PIM role settigns are NOT checked
+        $global:GLOBALPIMForEntraRolesChecked = $false
         Return
     }
 
@@ -3248,6 +3327,10 @@ function Get-EntraPIMRoleAssignments {
         }
 
     }
+
+    #Set global var so that PIM role settigns are checked as well
+    $global:GLOBALPIMForEntraRolesChecked = $true
+
     Write-Host "[+] Got $($TenantPIMRoleAssignments.Count) PIM eligible Entra role assignments"
     Return $TenantPIMRoleAssignments
 }
@@ -3568,6 +3651,7 @@ function start-InitTasks {
         ConditionalAccess      = @{ Count = 0; Enabled = 0 }
         EntraRoleAssignments   = @{ Count = 0; Eligible = 0; BuiltIn = 0; PrincipalType = @{ 'User' = 0; 'Group' = 0; 'App' = 0; 'MI' = 0; 'Unknown' = 0}; Tiers = @{ 'Tier-0' = 0; 'Tier-1' = 0; 'Tier-2' = 0; 'Uncategorized' = 0} }
         AzureRoleAssignments   = @{ Count = 0; Eligible = 0; BuiltIn = 0; PrincipalType = @{ 'User' = 0; 'Group' = 0; 'SP' = 0; 'Unknown' = 0}; }
+        PimSettings            = @{ Count = 0}
         Errors                 = @()
     }
 }
@@ -3630,6 +3714,7 @@ function start-CleanUp {
     remove-variable -Scope Global GLOBALAzureRoleRating -ErrorAction SilentlyContinue
     remove-variable -Scope Global GLOBALImpactScore -ErrorAction SilentlyContinue
     remove-variable -Scope Global GLOBALPIMsGraphAccessToken -ErrorAction SilentlyContinue
+    remove-variable -Scope Global GLOBALPIMForEntraRolesChecked -ErrorAction SilentlyContinue
 }
 
 function Write-LogVerbose {
@@ -3667,4 +3752,4 @@ function Show-EntraFalconBanner {
     Write-Host ""
 }
 
-Export-ModuleMember -Function Show-EntraFalconBanner,AuthenticationMSGraph,Get-Devices,Get-UsersBasic,start-CleanUp,Format-ReportSection,Get-OrgInfo,Write-LogVerbose,Invoke-AzureRoleProcessing,Get-RegisterAuthMethodsUsers,Invoke-EntraRoleProcessing,Get-EntraPIMRoleAssignments,AuthCheckMSGraph,RefreshAuthenticationMsGraph,Get-PimforGroupsAssignments,Invoke-CheckTokenExpiration,Invoke-MsGraphAuthPIM,EnsureAuthMsGraph,Get-AzureRoleDetails,Get-AdministrativeUnitsWithMembers,Get-ConditionalAccessPolicies,Get-EntraRoleAssignments,Get-APIPermissionCategory,Get-ObjectInfo,EnsureAuthAzurePsNative,checkSubscriptionNative,Get-AllAzureIAMAssignmentsNative,Get-PIMForGroupsAssignmentsDetails,Show-EnumerationSummary,start-InitTasks
+Export-ModuleMember -Function Show-EntraFalconBanner,AuthenticationMSGraph,Get-Devices,Get-UsersBasic,start-CleanUp,Format-ReportSection,Get-OrgInfo,Invoke-MsGraphRefreshPIM,Write-LogVerbose,Invoke-AzureRoleProcessing,Get-RegisterAuthMethodsUsers,Invoke-EntraRoleProcessing,Get-EntraPIMRoleAssignments,AuthCheckMSGraph,RefreshAuthenticationMsGraph,Get-PimforGroupsAssignments,Invoke-CheckTokenExpiration,Invoke-MsGraphAuthPIM,EnsureAuthMsGraph,Get-AzureRoleDetails,Get-AdministrativeUnitsWithMembers,Get-ConditionalAccessPolicies,Get-EntraRoleAssignments,Get-APIPermissionCategory,Get-ObjectInfo,EnsureAuthAzurePsNative,checkSubscriptionNative,Get-AllAzureIAMAssignmentsNative,Get-PIMForGroupsAssignmentsDetails,Show-EnumerationSummary,start-InitTasks

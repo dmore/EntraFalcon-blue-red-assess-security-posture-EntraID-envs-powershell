@@ -91,7 +91,7 @@ if ($ManualCode.IsPresent) {
 }
 
 #Constants
-$EntraFalconVersion = "V20250612"
+$EntraFalconVersion = "V20250715"
 
 #Define additional authentication parameters
 $Global:GLOBALAuthParameters = @{}
@@ -129,6 +129,7 @@ import-module ./modules/check_CAPs.psm1 -force
 import-module ./modules/Send-GraphBatchRequest.psm1 -force
 import-module ./modules/Send-GraphRequest.psm1 -force
 import-module ./modules/export_Summary.psm1 -force
+import-module ./modules/check_PIM.psm1 -force
 
 #Define summary array and show banner
 Start-InitTasks -EntraFalconVersion $EntraFalconVersion -UserAgent $UserAgent
@@ -210,28 +211,36 @@ $Devices = Get-Devices
 # Get Basic User info
 $AllUsersBasicHT = Get-UsersBasic
 
-write-host "`n********************************** [1/8] Enumerating Groups **********************************"
+write-host "`n********************************** [1/9] Enumerating Groups **********************************"
 $AllGroupsDetails = Invoke-CheckGroups -AdminUnitWithMembers $AdminUnitWithMembers -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -ConditionalAccessPolicies $Caps -AzureIAMAssignments $AzureIAMAssignments -TenantRoleAssignments $TenantRoleAssignments -TenantPimForGroupsAssignments $TenantPimForGroupsAssignments -OutputFolder $OutputFolder -Devices $Devices -AllUsersBasicHT $AllUsersBasicHT -Verbose:$VerbosePreference @optionalParamsUserandGroup
 
-write-host "`n********************************** [2/8] Enumerating Enterprise Apps **********************************"
+write-host "`n********************************** [2/9] Enumerating Enterprise Apps **********************************"
 $EnterpriseApps = Invoke-CheckEnterpriseApps -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -AzureIAMAssignments $AzureIAMAssignments -TenantRoleAssignments $TenantRoleAssignments -AllGroupsDetails $AllGroupsDetails -OutputFolder $OutputFolder -AllUsersBasicHT $AllUsersBasicHT -Verbose:$VerbosePreference @optionalParamsET
 
-write-host "`n********************************** [3/8] Enumerating Managed Identities **********************************"
+write-host "`n********************************** [3/9] Enumerating Managed Identities **********************************"
 $ManagedIdentities = Invoke-CheckManagedIdentities -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -AzureIAMAssignments $AzureIAMAssignments -TenantRoleAssignments $TenantRoleAssignments -AllGroupsDetails $AllGroupsDetails -OutputFolder $OutputFolder -Verbose:$VerbosePreference
 
-write-host "`n********************************** [4/8] Enumerating App Registrations **********************************"
+write-host "`n********************************** [4/9] Enumerating App Registrations **********************************"
 $AppRegistrations = Invoke-CheckAppRegistrations -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -EnterpriseApps $EnterpriseApps -AllGroupsDetails $AllGroupsDetails -TenantRoleAssignments $TenantRoleAssignments -OutputFolder $OutputFolder -Verbose:$VerbosePreference
 
-write-host "`n********************************** [5/8] Enumerating Users **********************************"
+write-host "`n********************************** [5/9] Enumerating Users **********************************"
 $Users = Invoke-CheckUsers -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -EnterpriseApps $EnterpriseApps -AllGroupsDetails $AllGroupsDetails -ConditionalAccessPolicies $Caps -AzureIAMAssignments $AzureIAMAssignments -TenantRoleAssignments $TenantRoleAssignments -AppRegistrations $AppRegistrations -AdminUnitWithMembers $AdminUnitWithMembers -TenantPimForGroupsAssignments $TenantPimForGroupsAssignments -UserAuthMethodsTable $UserAuthMethodsTable -Devices $Devices -OutputFolder $OutputFolder -Verbose:$VerbosePreference @optionalParamsUserandGroup
 
-write-host "`n********************************** [6/8] Generating Role Assignments **********************************"
+write-host "`n********************************** [6/9] Generating Role Assignments **********************************"
 Invoke-CheckRoles -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -EnterpriseApps $EnterpriseApps -AllGroupsDetails $AllGroupsDetails -AzureIAMAssignments $AzureIAMAssignments -TenantRoleAssignments $TenantRoleAssignments -AppRegistrations $AppRegistrations -AdminUnitWithMembers $AdminUnitWithMembers -Users $Users -ManagedIdentities $ManagedIdentities -OutputFolder $OutputFolder -Verbose:$VerbosePreference
 
-write-host "`n********************************** [7/8] Generating CAP Report **********************************"
-Invoke-CheckCaps -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -AllGroupsDetails $AllGroupsDetails -Users $Users -OutputFolder $OutputFolder -TenantRoleAssignments $TenantRoleAssignments -Verbose:$VerbosePreference
+write-host "`n********************************** [7/9] Enumerating Conditional Access Policies **********************************"
+$AllCaps = Invoke-CheckCaps -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -AllGroupsDetails $AllGroupsDetails -Users $Users -OutputFolder $OutputFolder -TenantRoleAssignments $TenantRoleAssignments -Verbose:$VerbosePreference
 
-write-host "`n********************************** [8/8] Generating Summary Report **********************************"
+write-host "`n********************************** [8/9] Enumerating PIM Role Settings **********************************"
+if ($GLOBALPIMForEntraRolesChecked) {
+    Invoke-CheckPIM -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -OutputFolder $OutputFolder -AllGroupsDetails $AllGroupsDetails -Users $Users -TenantRoleAssignments $TenantRoleAssignments -AllCaps $AllCaps -Verbose:$VerbosePreference
+} else {
+    write-host "[!] Tenant is not licensed to use PIM. Skipping role settings checks..."
+}
+
+
+write-host "`n********************************** [9/9] Generating Summary Report **********************************"
 # Show assessment summary and generate summary HTML report
 Export-Summary -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -OutputFolder $OutputFolder -Verbose:$VerbosePreference
 
