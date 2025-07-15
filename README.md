@@ -39,6 +39,7 @@ Findings are presented in interactive HTML reports to support efficient explorat
     - Azure Role Assignments
     - Conditional Access Policies
     - Administrative Units
+	- PIM settings (for Entra Roles)
 
 
 ## ✅ Requirements
@@ -53,6 +54,20 @@ Ensure that Conditional Access Policies do not block your authentication.
 
 ## ▶️ Usage
 
+### Download EntraFalcon
+To get started, clone the repository and navigate into the project directory:
+```powershell
+git clone https://github.com/CompassSecurity/EntraFalcon
+cd EntraFalcon
+```
+
+Note: You may need to temporarily change the PowerShell execution policy to run the script.
+Only do this for trusted scripts!
+```
+Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process
+```
+
+### Run EntraFalcon
 The tool includes built-in support for Entra ID authentication using a custom forked PowerShell module.
 You can choose from multiple authentication flows depending on your environment and preference.
 
@@ -60,44 +75,45 @@ You can choose from multiple authentication flows depending on your environment 
 > This is due to the need for a special first-party client with elevated scopes to access **PIM for Groups** data.  
 > You can skip the enumeration of PIM for Groups (and thus the first authentication) by using the `-SkipPimForGroups` switch.
 
-### Auth Code Flow (default) (Windows only)
+#### Auth Code Flow (default) (Windows only)
 
 ```powershell
 .\run_EntraFalcon.ps1
 ```
 
-### Use Device Code Authentication
+#### Use Device Code Authentication
 
 ```powershell
 .\run_EntraFalcon.ps1 -AuthMethod "DeviceCode"
 ```
 
-### Use Manual Code Flow Authentication
+#### Use Manual Code Flow Authentication
 
 ```powershell
 .\run_EntraFalcon.ps1 -AuthMethod "ManualCode"
 ```
-1. Run the script — it will copy the authentication URL to your clipboard.
+1. The script copies the authentication URL to your clipboard.
 2. Paste the URL into a browser (can be done on a different device for SSO support).
 3. Complete the authentication.
 4. Copy the final redirect URL (containing the authorization code) to your clipboard.
 5. Continue the script, which will automatically read the code from your clipboard and proceed with token acquisition.
 
+### Other Options
 
-### Include Microsoft-Owned Enterprise Apps
+#### Include Microsoft-Owned Enterprise Apps
 By default, official Microsoft enterprise applications are excluded from the assessment to reduce noise. To include them in the enumeration and analysis, use the `-IncludeMsApps` switch:
 ```powershell
 .\run_EntraFalcon.ps1 -IncludeMsApps
 ```
 
-### Skip PIM for Groups Assessment
+#### Skip PIM for Groups Assessment
 Use the `-SkipPimForGroups` switch to skip the enumeration of PIM assignments for groups.  
 This skips the additional authentication needed to access PIM for Groups data.
 ```powershell
 .\run_EntraFalcon.ps1 -SkipPimForGroups
 ```
 
-**Other Optional Parameters:**
+#### Other Optional Parameters
 | Parameter              | Description                                                                                                                      | Default Value                                     |
 |----------------------  |----------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------|
 | **UserAgent**          | User agent used for the requests to the token endpoint and API calls.                                                            | `EntraFalcon`                                     |  
@@ -108,24 +124,33 @@ This skips the additional authentication needed to access PIM for Groups data.
 | **Verbose**            | Enables detailed output. Useful for troubleshooting and monitoring progress in large tenants.                                    | -                                                 |
 
 
-## 📊 Example Reports
+## 📊 Some Example Reports
 
-**Users**  
+### Users
 ![alt text](/images/user.png)
 
-**Azure Roles**  
+### Users (Details Section)
+![alt text](/images/user_details.png)
+
+### Entra ID Roles
+![alt text](/images/entra_roles.png)
+
+### Azure Roles
 ![alt text](/images/azure_roles.png)
 
-**Enterprise Application Details**  
+### Enterprise Application (Details Section)
 ![alt text](/images/sp_details.png)
 
-**Conditional Access Policies**  
+### Conditional Access Policies
 ![alt text](/images/caps.png)
 
-**Conditional Access Policies Details**  
+### Conditional Access Policies (Details Section)
 ![alt text](/images/caps_details.png)
 
-**Enumeration Summary**  
+### PIM Role Settings
+![alt text](/images/pim_settings.png)
+
+### Enumeration Summary
 ![alt text](/images/enumeration_overview.png)
 
 
@@ -471,6 +496,22 @@ The following table roughly summarizes the checks performed, along with their im
 |CAP|No or misconfigured policy enforcing MFA|-|Yes|
 |CAP|No policy enforcing Authentication Strength|-|Yes|
 |CAP|Inclusion of roles which have scoped assignments|-|Yes|
+|PIMSettings|AuthContext|-|Yes|
+|PIMSettings|AuthContext linked CAP: Sign-In Frequency|-|Yes|
+|PIMSettings|AuthContext linked CAP: MFA or AuthStrength|-|Yes|
+|PIMSettings|AuthContext linked CAP: Enabled|-|Yes|
+|PIMSettings|AuthContext linked CAP: Included/Exluded users/groups/networks|-|Yes|
+|PIMSettings|AuthContext linked CAP: Conditions|-|Yes|
+|PIMSettings|Activation MFA|-|No|
+|PIMSettings|Activation justifcation or ticket|-|Yes|
+|PIMSettings|Activation duration|-|Yes|
+|PIMSettings|Activation approval|-|Yes|
+|PIMSettings|Eligible assignment expiration|-|No|
+|PIMSettings|Active assignment expiration|-|Yes|
+|PIMSettings|Active assignments MFA|-|No|
+|PIMSettings|Notification role activation|-|No|
+|PIMSettings|Notification role assignment (active)|-|No|
+|PIMSettings|Notification role assignment (eligible)|-|No|
 </details>
 
 ## 🛡️ Detection
